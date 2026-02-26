@@ -114,7 +114,7 @@ function formatReview(review, listing) {
 }
 
 // ── SLACK WEBHOOK ─────────────────────────────────────────────
-const SLACK_WEBHOOK = 'https://hooks.slack.com/services/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';
+const SLACK_WEBHOOK = process.env.SLACK_WEBHOOK_URL;
 
 
 async function sendSlack(review, listing) {
