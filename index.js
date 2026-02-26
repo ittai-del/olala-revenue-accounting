@@ -108,7 +108,7 @@ class Supabase {
     if (!rows.length) return;
     const res = await fetch(`${this.url}/rest/v1/${table}`, {
       method:  'POST',
-      headers: { ...this.headers, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      headers: { ...this.headers, 'Prefer': 'resolution=merge-duplicates,return=minimal', 'x-statement-timeout': '30000' },
       body:    JSON.stringify(rows),
     });
     if (!res.ok) {
@@ -120,7 +120,7 @@ class Supabase {
   async insert(table, row) {
     const res = await fetch(`${this.url}/rest/v1/${table}`, {
       method:  'POST',
-      headers: { ...this.headers, 'Prefer': 'return=representation' },
+      headers: { ...this.headers, 'Prefer': 'return=representation', 'x-statement-timeout': '30000' },
       body:    JSON.stringify(row),
     });
     if (!res.ok) throw new Error(`Supabase insert ${table}: ${res.status} ${await res.text()}`);
@@ -235,13 +235,20 @@ async function fetchReservations(fromDate, toDate, spainIds, token) {
   ].join(' ');
 
   while (true) {
-    const r = await fetch(
-      `https://open-api.guesty.com/v1/reservations`
-      + `?filters=${encodeURIComponent(filters)}`
-      + `&fields=${encodeURIComponent(fields)}`
-      + `&limit=100&skip=${skip}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    let r, attempts = 0;
+    while (attempts < 3) {
+      r = await fetch(
+        `https://open-api.guesty.com/v1/reservations`
+        + `?filters=${encodeURIComponent(filters)}`
+        + `&fields=${encodeURIComponent(fields)}`
+        + `&limit=50&skip=${skip}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (r.ok) break;
+      attempts++;
+      console.log(`   ⚠️  Attempt ${attempts} failed (${r.status}), retrying in 5s...`);
+      await sleep(5000);
+    }
     if (!r.ok) throw new Error(`Reservations: ${r.status} ${await r.text()}`);
     const { results, count } = await r.json();
     all.push(...results.filter(r => spainIds.has(r.listingId)));
