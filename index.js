@@ -448,6 +448,12 @@ function toCSV(lines) {
 // ─────────────────────────────────────────────────────────────
 function parseArgs() {
   const args = process.argv.slice(2);
+  // Support RUN_MONTH env variable (e.g. RUN_MONTH=2026-01)
+  const envMonth = process.env.RUN_MONTH;
+  if (envMonth && /^\d{4}-\d{2}$/.test(envMonth)) {
+    const [y, mo] = envMonth.split('-').map(Number);
+    return { mode: 'monthly', year: y, month: mo };
+  }
   if (args.includes('--month')) {
     const m = args[args.indexOf('--month') + 1];
     if (m && /^\d{4}-\d{2}$/.test(m)) {
