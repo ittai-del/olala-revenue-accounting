@@ -149,16 +149,25 @@ let _tok = { v: null, exp: 0 };
 async function getToken() {
   if (_tok.v && Date.now() < _tok.exp - 300_000) return _tok.v;
   console.log('🔑 Authenticating with Guesty...');
-  const r = await fetch('https://auth.guesty.com/oauth/token', {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body:    new URLSearchParams({
-      grant_type:    'client_credentials',
-      client_id:     process.env.GUESTY_CLIENT_ID,
-      client_secret: process.env.GUESTY_CLIENT_SECRET,
-    }),
-  });
-  if (!r.ok) throw new Error(`Auth: ${r.status} ${await r.text()}`);
+  console.log('   Client ID:', process.env.GUESTY_CLIENT_ID?.slice(0,8) + '...');
+  let r;
+  try {
+    r = await fetch('https://auth.guesty.com/oauth/token', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    new URLSearchParams({
+        grant_type:    'client_credentials',
+        client_id:     process.env.GUESTY_CLIENT_ID,
+        client_secret: process.env.GUESTY_CLIENT_SECRET,
+      }),
+    });
+  } catch (e) {
+    throw new Error(`Auth network error: ${e.message} | cause: ${e.cause?.message || e.cause || 'none'}`);
+  }
+  if (!r.ok) {
+    const body = await r.text();
+    throw new Error(`Auth HTTP ${r.status}: ${body}`);
+  }
   const d = await r.json();
   _tok = { v: d.access_token, exp: Date.now() + d.expires_in * 1000 };
   console.log('   ✅ Token OK');
