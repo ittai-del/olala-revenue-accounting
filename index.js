@@ -27,7 +27,7 @@
  * ============================================================
  */
 
-const fetch = (...a) => import('node-fetch').then(({ default: f }) => f(...a));
+const fetch = require('node-fetch');
 const fs    = require('fs');
 const path  = require('path');
 
