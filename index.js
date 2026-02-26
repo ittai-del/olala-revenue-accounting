@@ -460,7 +460,9 @@ function parseArgs() {
       const [y, mo] = m.split('-').map(Number);
       return { mode: 'monthly', year: y, month: mo };
     }
+    // No argument = previous month
     const n = new Date();
+    n.setDate(0); // go to last day of previous month
     return { mode: 'monthly', year: n.getFullYear(), month: n.getMonth() + 1 };
   }
   const d = args.find(a => /^\d{4}-\d{2}-\d{2}$/.test(a))
