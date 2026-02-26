@@ -15,3 +15,6 @@ command = "node index.js"
 [[cronjobs]]
 schedule = "0 6 1 * *"
 command = "node index.js --month"
+[[cronjobs]]
+schedule = "0 8 * * *"
+command = "node reviews.js"
