@@ -1,13 +1,15 @@
-[build]
-builder = "NIXPACKS"
-
-[deploy]
-startCommand = "node index.js"
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 3
-
-# Daily run at 6:00 AM Madrid time (UTC+1 in winter, UTC+2 in summer)
-# 05:00 UTC covers both
-[[cronjobs]]
-schedule = "0 5 * * *"
-command = "node index.js"
+services:
+  - type: worker
+    name: olala-revenue-accounting
+    runtime: node
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: GUESTY_CLIENT_ID
+        sync: false
+      - key: GUESTY_CLIENT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
