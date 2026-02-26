@@ -4,12 +4,10 @@
   "description": "Olala! Guesty → Supabase + Sage 200 Spain revenue pipeline",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "daily": "node index.js --date",
-    "monthly": "node index.js --month"
+    "start": "node index.js"
   },
   "dependencies": {
-    "node-fetch": "^3.3.2"
+    "node-fetch": "2.7.0"
   },
   "engines": {
     "node": ">=18.0.0"
