@@ -1,4 +1,17 @@
+[build]
+builder = "NIXPACKS"
+
 [deploy]
-startCommand = "node index.js --month 2026-01"
+startCommand = "node index.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+
+# Daily run at 06:00 CET every day
+[[cronjobs]]
+schedule = "0 5 * * *"
+command = "node index.js"
+
+# Monthly run on the 1st of every month at 07:00 CET
+[[cronjobs]]
+schedule = "0 6 1 * *"
+command = "node index.js --month"
