@@ -157,13 +157,12 @@ async function getToken() {
   console.log('   Client ID:', process.env.GUESTY_CLIENT_ID?.slice(0,8) + '...');
   let r;
   try {
-    r = await fetch('https://auth.guesty.com/oauth/token', {
+    r = await fetch('https://open-api.guesty.com/oauth2/token', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body:    new URLSearchParams({
-        grant_type:    'client_credentials',
-        client_id:     process.env.GUESTY_CLIENT_ID,
-        client_secret: process.env.GUESTY_CLIENT_SECRET,
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body:    JSON.stringify({
+        clientId:     process.env.GUESTY_CLIENT_ID,
+        clientSecret: process.env.GUESTY_CLIENT_SECRET,
       }),
     });
   } catch (e) {
