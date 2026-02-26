@@ -1,0 +1,17 @@
+{
+  "name": "olala-guesty-sage200",
+  "version": "4.0.0",
+  "description": "Olala! Guesty → Supabase + Sage 200 Spain revenue pipeline",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "daily": "node index.js --date",
+    "monthly": "node index.js --month"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

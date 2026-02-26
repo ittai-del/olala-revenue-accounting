@@ -1,0 +1,13 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "node index.js"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Daily run at 6:00 AM Madrid time (UTC+1 in winter, UTC+2 in summer)
+# 05:00 UTC covers both
+[[cronjobs]]
+schedule = "0 5 * * *"
+command = "node index.js"
