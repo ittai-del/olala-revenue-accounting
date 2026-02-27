@@ -816,8 +816,15 @@ function populateExport() {
   const thisMonth = new Date().toISOString().slice(0,7);
   const monthlyRuns = allRuns.filter(r=>r.mode==='monthly'&&r.csv_content&&r.csv_content.length>10&&r.period<thisMonth);
   document.getElementById('expPeriod').innerHTML = monthlyRuns.map(r=>{
-    const d = new Date(r.period+'-01');
-    const label = d.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+    // period is stored as "01/2026" or "2026-01"
+    let d;
+    if (r.period && r.period.includes('/')) {
+      const [mm, yyyy] = r.period.split('/');
+      d = new Date(`${yyyy}-${mm}-01`);
+    } else {
+      d = new Date(r.period + '-01');
+    }
+    const label = isNaN(d) ? r.period : d.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
     return `<option value="${r.id}">${label}</option>`;
   }).join('') || '<option value="">No monthly runs yet</option>';
 
@@ -1123,60 +1130,76 @@ const SLACK_WEBHOOK = 'https://hooks.slack.com/services/TPTA2F1L2/B0AHU68841X/T3
 const THRESHOLD = 4;
 
 async function loadReviews() {
-  document.getElementById('reviewsContent').innerHTML = '<div class="loader"><div class="spinner"></div>Fetching reviews from Guesty...</div>';
+  document.getElementById('reviewsContent').innerHTML = '<div class="loader"><div class="spinner"></div>Fetching reviews...</div>';
   document.getElementById('reviewSummary').textContent = '';
   try {
-    const token = await getGuestyToken();
     const days = Number(document.getElementById('reviewDays').value);
     const since = new Date(); since.setDate(since.getDate() - days);
-    const r = await fetch(`https://open-api.guesty.com/v1/reviews?limit=100&sort=-submittedAt`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
-    });
-    if (!r.ok) throw new Error(`Reviews API ${r.status}`);
-    const d = await r.json();
-    const reviews = (d.results || d.data || []).filter(rv => {
-      if (!rv.submittedAt) return true;
-      return new Date(rv.submittedAt) >= since;
-    });
+    const sinceStr = since.toISOString();
 
-    const low = reviews.filter(rv => {
-      const s = rv.ratings?.overall ?? rv.score ?? rv.rating ?? null;
-      return s !== null && s < THRESHOLD;
-    });
+    const reviews = await api(`reviews?submitted_at=gte.${sinceStr}&order=submitted_at.desc&limit=200`);
 
+    const low = reviews.filter(rv => rv.score !== null && rv.score < THRESHOLD);
     document.getElementById('reviewSummary').textContent = `${reviews.length} reviews · ${low.length} below ${THRESHOLD} stars`;
 
     if (!reviews.length) {
-      document.getElementById('reviewsContent').innerHTML = '<div class="empty">No reviews found for this period</div>';
+      document.getElementById('reviewsContent').innerHTML = '<div class="empty">No reviews found — run reviews.js first via Railway to populate</div>';
       return;
     }
 
-    const PC = {airbnb:'#ff5a5f', booking:'#003580', direct:'#0f7b6c', other:'#ababab'};
     document.getElementById('reviewsContent').innerHTML = `<div class="tbl-wrap"><table>
       <thead><tr><th>Property</th><th>City</th><th>Score</th><th>Guest</th><th>Date</th><th>Review</th><th></th></tr></thead>
       <tbody>${reviews.map(rv => {
-        const score = rv.ratings?.overall ?? rv.score ?? rv.rating ?? '?';
+        const score = rv.score ?? '?';
         const isLow = score !== '?' && score < THRESHOLD;
-        const stars = '★'.repeat(Math.floor(score))+'☆'.repeat(5-Math.floor(score));
-        const name = rv.listingNickname || rv.listingTitle || rv.listingId || '—';
-        const city = rv.listingCity || '—';
-        const guest = rv.guestName || rv.guest?.fullName || '—';
-        const date = rv.submittedAt ? new Date(rv.submittedAt).toLocaleDateString('en-GB') : '—';
-        const text = rv.publicReview || rv.reviewText || rv.comment || '—';
+        const stars = score !== '?' ? '★'.repeat(Math.floor(score))+'☆'.repeat(5-Math.floor(score)) : '?????';
         const scoreColor = score <= 2 ? 'var(--red)' : score <= 3 ? 'var(--amber)' : score < THRESHOLD ? '#d97706' : 'var(--green)';
+        const date = rv.submitted_at ? new Date(rv.submitted_at).toLocaleDateString('en-GB') : '—';
+        const text = rv.review_text || '—';
         return `<tr style="${isLow?'background:#fff8f8':''}">
-          <td style="font-weight:500">${name}</td>
-          <td class="mono">${city}</td>
+          <td style="font-weight:500">${rv.listing_name||'—'}</td>
+          <td class="mono">${rv.city||'—'}</td>
           <td style="font-weight:700;color:${scoreColor};white-space:nowrap">${stars} ${score}</td>
-          <td>${guest}</td>
+          <td>${rv.guest_name||'—'}</td>
           <td class="mono" style="color:var(--text3)">${date}</td>
           <td style="max-width:300px;font-size:12px;color:var(--text2)">${text.slice(0,120)}${text.length>120?'...':''}</td>
-          <td>${isLow?`<button class="btn btn-ghost btn-xs" style="color:var(--red);white-space:nowrap" onclick="sendAlert(${JSON.stringify(JSON.stringify(rv))})">→ Slack</button>`:'<span style="color:var(--text3);font-size:11px">✓ OK</span>'}</td>
+          <td>${isLow?`<button class="btn btn-ghost btn-xs" style="color:var(--red);white-space:nowrap" onclick="sendSlackAlert(${JSON.stringify(JSON.stringify(rv))})">→ Slack</button>`:'<span style="color:var(--text3);font-size:11px">✓ OK</span>'}</td>
         </tr>`;
       }).join('')}</tbody></table></div>`;
   } catch(e) {
     document.getElementById('reviewsContent').innerHTML = `<div class="empty">Error: ${e.message}</div>`;
   }
+}
+
+async function sendSlackAlert(rvJson) {
+  const rv = JSON.parse(rvJson);
+  const score = rv.score ?? '?';
+  const stars = score !== '?' ? '★'.repeat(Math.floor(score))+'☆'.repeat(5-Math.floor(score)) : '?????';
+  const color = score <= 2 ? '#e03e3e' : score <= 3 ? '#d97706' : '#dfab01';
+  const date = rv.submitted_at ? new Date(rv.submitted_at).toLocaleDateString('en-GB') : '—';
+  const text = rv.review_text || '(no comment)';
+
+  const payload = {
+    text: `🚨 Low review alert — *${rv.listing_name||'Unknown'}* got ${score}/5`,
+    attachments: [{
+      color,
+      blocks: [
+        { type:'section', fields:[
+          {type:'mrkdwn',text:`*Property*\n${rv.listing_name||'—'}`},
+          {type:'mrkdwn',text:`*City*\n${rv.city||'—'}`},
+          {type:'mrkdwn',text:`*Score*\n${stars} ${score}/5`},
+          {type:'mrkdwn',text:`*Guest*\n${rv.guest_name||'—'} · ${date}`},
+        ]},
+        { type:'section', text:{type:'mrkdwn',text:`_"${text.slice(0,500)}"_`}},
+        { type:'context', elements:[{type:'mrkdwn',text:`⚠️ Sent manually from Olala! Dashboard`}]}
+      ]
+    }]
+  };
+
+  try {
+    await fetch(SLACK_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+    toast('Alert sent to Slack ✓');
+  } catch(e) { toast('Slack error: '+e.message); }
 }
 
 async function sendAlert(rvJson) {
