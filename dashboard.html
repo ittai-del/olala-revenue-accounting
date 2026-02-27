@@ -49,6 +49,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 /* ── TOPBAR ── */
 .topbar{height:48px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;background:var(--bg);z-index:50}
 .topbar-title{font-size:14px;font-weight:600;flex:1}
+@media(max-width:600px){
+  .sidebar{position:fixed;left:-232px;top:0;height:100vh;z-index:200;transition:left .2s;box-shadow:none}
+  .sidebar.open{left:0;box-shadow:4px 0 20px rgba(0,0,0,.15)}
+  .main{margin-left:0!important}
+  #menuBtn{display:flex!important}
+  .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:199}
+  .sb-overlay.open{display:block}
+  .topbar{padding:0 14px}
+}
 .btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;transition:all .12s;border:1px solid transparent;font-family:'Inter',sans-serif;white-space:nowrap}
 .btn:active{transform:scale(.98)}
 .btn-ghost{background:none;color:var(--text2);border-color:var(--border)}
@@ -284,8 +293,10 @@ select.wide-input{cursor:pointer}
 </aside>
 
 <!-- MAIN -->
+<div class="sb-overlay" id="sbOverlay" onclick="toggleSidebar()"></div>
 <div class="main">
   <div class="topbar">
+    <button class="btn btn-ghost btn-sm" id="menuBtn" onclick="toggleSidebar()" style="display:none;padding:6px 8px;font-size:16px">☰</button>
     <div class="topbar-title" id="pageTitle">Export CSV</div>
     <div style="display:flex;gap:6px">
       <button class="btn btn-ghost btn-sm" onclick="loadAll()">↻ Refresh</button>
@@ -613,6 +624,9 @@ function nav(id) {
   document.getElementById('pageTitle').textContent = TITLES[id]||id;
   if (id==='nominals') renderNomFields();
   if (id==='mappings') renderCCFields();
+  // Close sidebar on mobile
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sbOverlay').classList.remove('open');
 }
 document.querySelectorAll('.sb-item').forEach(el=>{
   el.addEventListener('click',()=>nav(el.dataset.page));
@@ -1245,6 +1259,11 @@ function saveGuestyCredentials() {
   localStorage.setItem('guesty_secret', document.getElementById('cfgGuestySecret').value.trim());
   guestyToken = null; // reset token
   toast('Guesty credentials saved ✓');
+}
+
+function toggleSidebar() {
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('sbOverlay').classList.toggle('open');
 }
 
 // ── INIT ──────────────────────────────────────────────────────
