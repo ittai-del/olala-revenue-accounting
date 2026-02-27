@@ -50,8 +50,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-
 .topbar{height:48px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:12px;position:sticky;top:0;background:var(--bg);z-index:50}
 .topbar-title{font-size:14px;font-weight:600;flex:1}
 @media(max-width:600px){
-  .sidebar{position:fixed;left:-232px;top:0;height:100vh;z-index:200;transition:left .2s;box-shadow:none}
-  .sidebar.open{left:0;box-shadow:4px 0 20px rgba(0,0,0,.15)}
+  .sb{position:fixed;left:-232px;top:0;height:100vh;z-index:200;transition:left .2s;box-shadow:none}
+  .sb.open{left:0;box-shadow:4px 0 20px rgba(0,0,0,.15)}
   .main{margin-left:0!important}
   #menuBtn{display:flex!important}
   .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:199}
@@ -625,7 +625,7 @@ function nav(id) {
   if (id==='nominals') renderNomFields();
   if (id==='mappings') renderCCFields();
   // Close sidebar on mobile
-  document.querySelector('.sidebar').classList.remove('open');
+  document.querySelector('.sb').classList.remove('open');
   document.getElementById('sbOverlay').classList.remove('open');
 }
 document.querySelectorAll('.sb-item').forEach(el=>{
@@ -1262,7 +1262,7 @@ function saveGuestyCredentials() {
 }
 
 function toggleSidebar() {
-  document.querySelector('.sidebar').classList.toggle('open');
+  document.querySelector('.sb').classList.toggle('open');
   document.getElementById('sbOverlay').classList.toggle('open');
 }
 
