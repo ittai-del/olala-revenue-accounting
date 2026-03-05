@@ -97,13 +97,11 @@ async function fetchReviews(token, since) {
     const params = new URLSearchParams({
       limit: String(limit),
       skip:  String(skip),
-      sort:  '-submittedAt',
     });
 
+    // Filter by date if provided
     if (since) {
-      params.set('filters', JSON.stringify([
-        { field: 'submittedAt', operator: '$gte', value: since }
-      ]));
+      params.set('submittedAt[$gte]', since);
     }
 
     const r = await fetch(`https://open-api.guesty.com/v1/reviews?${params}`, {
